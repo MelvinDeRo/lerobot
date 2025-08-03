@@ -29,6 +29,7 @@ from lerobot.motors.feetech import (
 
 from ..robot import Robot
 from ..utils import ensure_safe_goal_position
+from ..utils import ensure_authorized_goal_position
 from .config_so100_follower import SO100FollowerConfig
 
 logger = logging.getLogger(__name__)
@@ -211,6 +212,13 @@ class SO100Follower(Robot):
             present_pos = self.bus.sync_read("Present_Position")
             goal_present_pos = {key: (g_pos, present_pos[key]) for key, g_pos in goal_pos.items()}
             goal_pos = ensure_safe_goal_position(goal_present_pos, self.config.max_relative_target)
+        # Cap goal position when outside of the limits
+        if self.config.max_position is not None:
+            present_pos = self.bus.sync_read("Present_Position")
+            goal_present_pos = {key: (g_pos, present_pos[key]) for key, g_pos in goal_pos.items()}
+            isAuthorized = ensure_authorized_goal_position(goal_pos, self.config.max_position)
+            if (isAuthorized == False):
+                goal_pos = present_pos
 
         # Send goal position to the arm
         self.bus.sync_write("Goal_Position", goal_pos)

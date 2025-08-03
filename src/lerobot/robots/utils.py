@@ -14,6 +14,7 @@
 
 import logging
 from pprint import pformat
+import math
 
 from lerobot.robots import RobotConfig
 
@@ -105,3 +106,43 @@ def ensure_safe_goal_position(
         )
 
     return safe_goal_positions
+
+def ensure_authorized_goal_position(
+    goal_pos: dict[str, float], max_position: float | dict[float]
+) -> dict[str, float]:
+    """Caps max distance between gripper and base"""
+
+    if isinstance(max_position, float):
+        max_position = dict.fromkeys(['x', 'y', 'z'], max_position)
+
+    h0 = 45e-3
+    a1 = 35e-3
+    a2 = 112e-3
+    a3 = 135e-3
+    a4 = 42e-3
+    c1 = 70e-3
+    c2 = 27e-3
+    c3 = 2e-3
+    c5 = 125e-3
+    
+    # transform each goal position (which are in degrees) to radians
+    goal_pos_rad = { key: angle * math.pi / 180 for key, angle in goal_pos.items()}
+    
+    # get the angles of the goal position
+    thetas = [goal_pos_rad['shoulder_pan'], goal_pos_rad['shoulder_lift'], goal_pos_rad['elbow_flex'], goal_pos_rad['wrist_flex']]
+    # compute the goal position on x,y and z from the angles
+    x = a1 * math.cos(thetas[0]) + a2 * math.sin(thetas[1]) * math.cos(thetas[0]) + c2 * math.cos(thetas[1]) * math.cos(thetas[0]) \
+        + a3 * math.cos(thetas[1] + thetas[2]) * math.cos(thetas[0]) + c3 * math.sin(thetas[1] + thetas[2]) * math.cos(thetas[0]) \
+        + (a4 + c5) * math.cos(thetas[1] + thetas[2] + thetas[3]) * math.cos(thetas[0])
+
+    y = a1 * math.sin(thetas[0]) + a2 * math.sin(thetas[1]) * math.sin(thetas[0]) + c2 * math.cos(thetas[1]) * math.sin(thetas[0]) \
+        + a3 * math.cos(thetas[1] + thetas[2]) * math.sin(thetas[0]) + c3 * math.sin(thetas[1] + thetas[2]) * math.sin(thetas[0]) \
+        + (a4 + c5) * math.cos(thetas[1] + thetas[2] + thetas[3]) * math.sin(thetas[0])
+
+    z = h0 + c1 + a2 * math.cos(thetas[1]) - c2 * math.sin(thetas[1]) - a3 * math.sin(thetas[1] + thetas[2]) \
+        + c3 * math.cos(thetas[1] + thetas[2]) - (a4 + c5) * math.sin(thetas[1] + thetas[2] + thetas[3])
+
+    # if the goal position is greater than the max position set it to the goal position on x, y and/or z
+    if (math.fabs(x) > max_position['x'] or math.fabs(y) > max_position['y'] or math.fabs(z) > max_position['z']):
+        return False
+    return True
