@@ -68,9 +68,11 @@ from lerobot.utils.utils import (
 @dataclass
 class DatasetReplayConfig:
     # Dataset identifier. By convention it should match '{hf_username}/{dataset_name}' (e.g. `lerobot/test`).
-    repo_id: str
+    repo_id: str | None = None
+    # Datasets identifier. If you want to play multiples episodes from different repo (always episode number 0)
+    repo_ids: list[str] | None = None
     # Episode to replay.
-    episode: int
+    episode: int = 0
     # Root directory where the dataset will be stored (e.g. 'dataset/path').
     root: str | Path | None = None
     # Limit the frames per second. By default, uses the policy fps.
@@ -111,6 +113,34 @@ def replay(cfg: ReplayConfig):
 
     robot.disconnect()
 
+@draccus.wrap()
+def feeding(cfg: ReplayConfig):
+    init_logging()
+    logging.info(pformat(asdict(cfg)))
+
+    robot = make_robot_from_config(cfg.robot)
+    robot.connect()
+    
+    log_say("Replaying episode", cfg.play_sounds, blocking=True)
+    for repo_id in cfg.dataset.repo_ids:
+        dataset = LeRobotDataset(repo_id, root=cfg.dataset.root, episodes=[cfg.dataset.episode])
+        actions = dataset.hf_dataset.select_columns("action")
+
+        for idx in range(dataset.num_frames):
+            start_episode_t = time.perf_counter()
+
+            action_array = actions[idx]["action"]
+            action = {}
+            for i, name in enumerate(dataset.features["action"]["names"]):
+                action[name] = action_array[i]
+
+            robot.send_action(action)
+
+            dt_s = time.perf_counter() - start_episode_t
+            busy_wait(1 / dataset.fps - dt_s)
+
+    robot.disconnect()
 
 if __name__ == "__main__":
-    replay()
+    # replay()
+    feeding()
