@@ -36,13 +36,13 @@ class SO100FollowerConfig(RobotConfig):
 
     # `max_position` limits the distance between the end of the gripper and the base of the robot
     # On three axes (x, y, z)
-    max_position: float | dict[str, float] | None = None
+    max_position: float | dict[str, float] | None = 20000.0
 
     # cameras
     cameras: dict[str, CameraConfig] = field(default_factory=dict)
 
     # Set to `True` for backward compatibility with previous policies/dataset
-    use_degrees: bool = False
+    use_degrees: bool = True
 
 
 @RobotConfig.register_subclass("so100_follower_end_effector")

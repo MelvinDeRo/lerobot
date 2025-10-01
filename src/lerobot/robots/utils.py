@@ -99,11 +99,11 @@ def ensure_safe_goal_position(
                 "safe goal_pos": safe_goal_pos,
             }
 
-    if warnings_dict:
-        logging.warning(
-            "Relative goal position magnitude had to be clamped to be safe.\n"
-            f"{pformat(warnings_dict, indent=4)}"
-        )
+    # if warnings_dict:
+    #     logging.warning(
+    #         "Relative goal position magnitude had to be clamped to be safe.\n"
+    #         f"{pformat(warnings_dict, indent=4)}"
+    #     )
 
     return safe_goal_positions
 
@@ -115,7 +115,7 @@ def ensure_authorized_goal_position(
     if isinstance(max_position, float):
         max_position = dict.fromkeys(['x', 'y', 'z'], max_position)
 
-    h0 = 45e-3
+    h0 = 44.45e-3
     a1 = 35e-3
     a2 = 112e-3
     a3 = 135e-3
@@ -126,7 +126,7 @@ def ensure_authorized_goal_position(
     c5 = 125e-3
     
     # transform each goal position (which are in degrees) to radians
-    goal_pos_rad = { key: angle * math.pi / 180 for key, angle in goal_pos.items()}
+    goal_pos_rad = { key: (angle) * math.pi / 180 for key, angle in goal_pos.items()}
     
     # get the angles of the goal position
     thetas = [goal_pos_rad['shoulder_pan'], goal_pos_rad['shoulder_lift'], goal_pos_rad['elbow_flex'], goal_pos_rad['wrist_flex']]
@@ -141,6 +141,9 @@ def ensure_authorized_goal_position(
 
     z = h0 + c1 + a2 * math.cos(thetas[1]) - c2 * math.sin(thetas[1]) - a3 * math.sin(thetas[1] + thetas[2]) \
         + c3 * math.cos(thetas[1] + thetas[2]) - (a4 + c5) * math.sin(thetas[1] + thetas[2] + thetas[3])
+    
+    # print(f"\nPosition X : {round(x, 2)}, Position y: {round(y, 2)}, Position z : {round(z, 2)}")
+    print(f"\nPosition intermédiaire : {h0 + c1 + a2 * math.cos(thetas[1]) - c2 * math.sin(thetas[1])}, autre position : {h0 + c1 + a2 * math.cos(thetas[1]) - c2 * math.sin(thetas[1]) - a3 * math.sin(thetas[1] + thetas[2])}")
 
     # if the goal position is greater than the max position set it to the goal position on x, y and/or z
     if (math.fabs(x) > max_position['x'] or math.fabs(y) > max_position['y'] or math.fabs(z) > max_position['z']):

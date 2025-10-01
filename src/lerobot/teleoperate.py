@@ -53,6 +53,7 @@ python -m lerobot.teleoperate \
 
 import logging
 import time
+from datetime import datetime
 from dataclasses import asdict, dataclass
 from pprint import pformat
 
@@ -126,7 +127,7 @@ def teleop_loop(
         if duration is not None and time.perf_counter() - start >= duration:
             return
 
-        move_cursor_up(len(action) + 5)
+        move_cursor_up(len(action) + 7)
 
 
 @draccus.wrap()

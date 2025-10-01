@@ -142,5 +142,5 @@ def feeding(cfg: ReplayConfig):
     robot.disconnect()
 
 if __name__ == "__main__":
-    # replay()
-    feeding()
+    replay()
+    # feeding()
